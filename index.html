@@ -1,4 +1,3 @@
-[index.html](https://github.com/user-attachments/files/30381742/index.html)
 <!doctype html>
 <html lang="ko">
 <head>
@@ -686,7 +685,9 @@ document.getElementById("q-list").addEventListener("click", function(e) {
   if (cycleId) { cycleQueueStatus(cycleId); return; }
   if (delId) { deleteQueueItem(delId); return; }
 });
-document.getElementById("q-ws").addEventListener("change", function(e) {});
+document.getElementById("q-ws").addEventListener("change", function(e) {
+  // if user changes workspace inside queue form, we can update or keep it
+});
 
 document.getElementById("key-save").addEventListener("click", saveKey);
 document.getElementById("key-del").addEventListener("click", function () { state.key = ""; localStorage.removeItem(LS.key); refreshMode(); setMsg("key-msg", "키를 삭제했습니다.", true); });
