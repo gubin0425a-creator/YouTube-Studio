@@ -1,0 +1,24 @@
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+}
+
+{$N8N_HOST} {
+	encode zstd gzip
+	reverse_proxy n8n:5678
+	import security_headers
+}
+
+{$STUDIO_HOST} {
+	encode zstd gzip
+	reverse_proxy video-worker:8000
+	request_body {
+		max_size 60MB
+	}
+	import security_headers
+}

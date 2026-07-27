@@ -1,0 +1,29 @@
+{
+  "id": "./",
+  "name": "YouTube Studio+ 유투봇",
+  "short_name": "유투봇",
+  "description": "n8n YouTube 자동화와 유투봇을 관리하는 설치형 앱",
+  "lang": "ko-KR",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b0f14",
+  "theme_color": "#ff0033",
+  "categories": ["productivity", "video", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

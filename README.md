@@ -1,541 +1,218 @@
-[index.html](https://github.com/user-attachments/files/30381742/index.html)
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YouTube Studio+ · gubin0425</title>
-<meta name="description" content="완전 자동화를 꿈꾸는 유튜버를 위한 실전 스튜디오. 채널 조회, 쇼츠 벤치마크, 조회수 그래프 — 전부 브라우저에서 실제 데이터로.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<style>
-  :root { --red:#ff0033; --bg:#0b0f14; --panel:#111720; --panel2:#0d1219; --line:#1e293b; --muted:#94a3b8; --ok:#34d399; --warn:#fbbf24; }
-  * { box-sizing:border-box; margin:0; }
-  html { scroll-behavior:smooth; }
-  body { background:var(--bg); color:#e2e8f0; font-family:"Noto Sans KR",sans-serif; line-height:1.55; overflow-x:hidden; }
-  body::before { content:""; position:fixed; inset:0; z-index:-2; background:
-    radial-gradient(860px 420px at 88% -8%, rgba(255,0,51,.15), transparent 62%),
-    radial-gradient(700px 380px at -8% 10%, rgba(37,99,235,.13), transparent 60%),
-    radial-gradient(560px 400px at 50% 112%, rgba(52,211,153,.09), transparent 60%); }
-  body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);
-    background-size:44px 44px; mask-image:radial-gradient(ellipse at 50% 0%, #000 26%, transparent 78%); }
-  .wrap { max-width:1120px; margin:0 auto; padding:0 20px; }
-  .display { font-family:"Black Han Sans","Noto Sans KR",sans-serif; letter-spacing:.01em; }
-  button { font-family:inherit; cursor:pointer; }
-  input,select { font-family:inherit; }
-  .reveal { opacity:0; transform:translateY(16px); transition:opacity .55s ease, transform .55s cubic-bezier(.22,1,.36,1); }
-  .reveal.in { opacity:1; transform:none; }
+# YouTube Studio+ — n8n 자동 업로드 + 유투봇
 
-  header.top { position:sticky; top:0; z-index:30; backdrop-filter:blur(14px); background:rgba(11,15,20,.85); border-bottom:1px solid var(--line); }
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:13px 0; gap:12px; flex-wrap:wrap; }
-  .brand { display:flex; align-items:center; gap:11px; }
-  .mark { width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--red),#a3001f); display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff; box-shadow:0 8px 22px rgba(255,0,51,.35); }
-  .brand b { font-size:17px; color:#fff; }
-  .chips { display:flex; gap:7px; flex-wrap:wrap; }
-  .chip { font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px; border:1px solid var(--line); color:var(--muted); display:inline-flex; align-items:center; }
-  .chip.ok { color:var(--ok); border-color:rgba(52,211,153,.4); background:rgba(52,211,153,.08); }
-  .chip.warn { color:var(--warn); border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.08); }
-  .dot { width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block; margin-right:6px; position:relative; }
-  .dot::after { content:""; position:absolute; inset:0; border-radius:50%; background:currentColor; animation:ping 1.8s ease-out infinite; }
-  @keyframes ping { 0%{transform:scale(1);opacity:.8} 75%,100%{transform:scale(2.6);opacity:0} }
+휴대폰이나 PC가 꺼져도 **VPS의 Docker 서비스가 계속 실행**되어 정해진 시간에 Shorts를 만들고 YouTube에 예약 게시합니다. 같은 서버에서 GPT형 **유투봇**이 대화·사진·채널/영상 분석과 자동화 설정 수정을 지원합니다.
 
-  .tabs { display:flex; gap:6px; margin:26px 0 20px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:5px; width:max-content; max-width:100%; overflow-x:auto; }
-  .tab { border:0; background:transparent; color:var(--muted); font-size:12.5px; font-weight:900; padding:9px 18px; border-radius:10px; transition:.18s; white-space:nowrap; }
-  .tab.active { background:var(--red); color:#fff; box-shadow:0 6px 18px rgba(255,0,51,.3); }
-  .tab:not(.active):hover { color:#fff; background:rgba(148,163,184,.08); }
-  .pane { display:none; } .pane.active { display:block; animation:fade .35s ease; }
-  @keyframes fade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+> [!CAUTION]
+> 채팅에 공개한 `GOCSPX-...` 형태의 값은 API 키가 아니라 **Google OAuth Client Secret**입니다. 이미 노출된 secret은 즉시 Google Cloud Console에서 폐기하고 새 OAuth 클라이언트를 만드세요. 이 저장소에는 해당 값을 넣지 않았습니다.
 
-  .grid { display:grid; gap:16px; }
-  .g-2 { grid-template-columns:340px 1fr; }
-  @media (max-width:900px){ .g-2{grid-template-columns:1fr} }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; }
-  .card h3 { font-size:15px; color:#fff; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-  .card h3 .ic { color:var(--red); }
-  label.f { display:block; font-size:11px; font-weight:800; color:var(--muted); margin:10px 0 5px; }
-  input.txt, select.txt { width:100%; background:var(--panel2); border:1px solid var(--line); color:#fff; border-radius:11px; padding:10px 12px; font-size:12.5px; outline:none; transition:border-color .15s; }
-  input.txt:focus, select.txt:focus { border-color:var(--red); }
-  .btn { border:0; border-radius:11px; padding:11px 16px; font-size:12.5px; font-weight:900; transition:.18s; display:inline-flex; align-items:center; gap:7px; }
-  .btn:disabled { opacity:.5; cursor:not-allowed; }
-  .btn.primary { background:var(--red); color:#fff; }
-  .btn.primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 24px rgba(255,0,51,.35); }
-  .btn.ghost { background:var(--panel2); border:1px solid var(--line); color:var(--muted); }
-  .btn.ghost:hover { color:#fff; border-color:#475569; }
-  .btn.warn { background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.4); color:var(--warn); }
-  .msg { margin-top:10px; font-size:11.5px; font-weight:700; border-radius:10px; padding:9px 12px; }
-  .msg.err { background:rgba(255,0,51,.1); border:1px solid rgba(255,0,51,.35); color:#fda4af; }
-  .msg.ok { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.35); color:#6ee7b7; }
+## 동작 구조
 
-  .ch-card { display:flex; gap:16px; align-items:flex-start; }
-  .ch-card img { width:74px; height:74px; border-radius:16px; object-fit:cover; border:1px solid var(--line); }
-  .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:16px; }
-  .metric { background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:12px; transition:.18s; }
-  .metric:hover { transform:translateY(-2px); border-color:#334155; }
-  .metric b { display:block; font-size:18px; color:#fff; }
-  .metric span { font-size:10.5px; color:var(--muted); font-weight:700; }
+```text
+[자동 제작]
+매일 03:00 KST n8n → 유투봇 설정 조회 → Gemini 기획 → TTS/FFmpeg 렌더
+→ YouTube OAuth로 private 업로드 + publishAt → 매일 18:00 자동 공개
 
-  .bm-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
-  .bm { background:var(--panel); border:1px solid var(--line); border-radius:16px; overflow:hidden; cursor:pointer; transition:.2s; }
-  .bm:hover { transform:translateY(-4px); border-color:rgba(255,0,51,.55); box-shadow:0 16px 36px rgba(255,0,51,.14); }
-  .bm.sel { border-color:var(--red); }
-  .bm.flash { animation:flash 1.3s ease-out 2; }
-  @keyframes flash { 0%{box-shadow:0 0 0 0 rgba(255,0,51,.6)} 100%{box-shadow:0 0 0 16px rgba(255,0,51,0)} }
-  .bm .thumb { aspect-ratio:16/9; background:#0d1219; position:relative; }
-  .bm .thumb img { width:100%; height:100%; object-fit:cover; }
-  .bm .thumb .tag { position:absolute; left:8px; top:8px; background:rgba(0,0,0,.78); color:#fda4af; font-size:10px; font-weight:900; padding:3px 8px; border-radius:6px; }
-  .bm .body { padding:12px; }
-  .bm .t { font-size:12px; font-weight:900; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:34px; }
-  .bm .m { font-size:10.5px; color:var(--muted); margin-top:6px; }
-  .bm .stats { display:flex; gap:12px; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); font-size:11px; font-weight:800; color:#cbd5e1; }
-  .bm .stats .v { color:#fda4af; } .bm .stats .l { color:#6ee7b7; }
-  .bm .acts { margin-left:auto; display:flex; gap:6px; }
-  .iconbtn { border:0; background:var(--panel2); color:var(--muted); border-radius:8px; width:26px; height:26px; font-size:12px; transition:.15s; }
-  .iconbtn:hover { background:var(--red); color:#fff; }
+[유투봇]
+Studio 로그인 → 영구 대화/사진 업로드 → 내 채널 + 벤치마킹 채널 실데이터 수집
+→ 각 채널 지정 영상 0~15개(비우면 최신 15개) → Gemini 분석/수정/설정 제안
+→ 사용자가 확인한 설정만 저장 → 다음 n8n 실행부터 반영
+```
 
-  .ws-chips { display:flex; gap:7px; flex-wrap:wrap; margin-top:12px; }
-  .ws { border:0; border-radius:999px; padding:7px 13px; font-size:11px; font-weight:900; background:var(--panel2); color:var(--muted); transition:.15s; display:inline-flex; gap:6px; align-items:center; }
-  .ws.active { background:var(--red); color:#fff; }
-  .ws .x { opacity:.5; } .ws:hover .x { opacity:1; color:#fff; }
+- **n8n 2.31.6 + PostgreSQL 16**: 워크플로와 OAuth 자격 증명 영구 저장
+- **유투봇 Studio**: HttpOnly 로그인, 대화방, 사진, 내보내기/삭제, 채널 비교, 자동화 설정 UI
+- **Video Worker**: Gemini 멀티모달, YouTube Data API, TTS, Pexels, FFmpeg를 묶은 FastAPI 서비스
+- **대화 보존**: 인위적인 메시지 개수·만료 제한 없이 SQLite/볼륨에 저장(모델에 보내는 최근 문맥 수만 제한)
+- **중복 방지**: 날짜·채널별 idempotency 키와 업로드 완료 상태를 SQLite에 보존
+- **상시 재시작**: 모든 핵심 컨테이너에 `restart: unless-stopped`
+- **정확한 게시**: 게시 시간까지 n8n을 기다리게 하지 않고, 영상을 미리 비공개 업로드한 뒤 YouTube `publishAt`으로 예약
+- **HTTPS**: production profile의 Caddy가 인증서를 자동 발급·갱신
+- **정리 작업**: 렌더 파일은 기본 7일 뒤 자동 삭제, n8n 실행 기록도 7일 뒤 정리
 
-  .chartbox { height:280px; margin-top:14px; }
-  .seg { display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px; }
-  .seg button { border:0; background:transparent; color:var(--muted); font-size:11px; font-weight:900; padding:6px 12px; border-radius:8px; }
-  .seg button.active { background:var(--red); color:#fff; }
+## 1. 서버 준비
 
-  .empty { border:1.5px dashed var(--line); border-radius:18px; padding:44px 20px; text-align:center; color:var(--muted); }
-  .empty b { color:#cbd5e1; display:block; margin-bottom:6px; font-size:14px; }
+GitHub Pages나 휴대폰 브라우저만으로는 백그라운드 작업이 불가능합니다. **항상 켜져 있는 Linux VPS**가 필요합니다.
 
-  .principles { border:1px solid rgba(52,211,153,.3); background:rgba(52,211,153,.07); border-radius:16px; padding:18px; margin-top:16px; }
-  .principles h4 { color:var(--ok); font-size:13.5px; margin-bottom:6px; }
-  .principles p { font-size:12px; color:rgba(167,243,208,.8); }
+권장 사양:
 
-  .modal { position:fixed; inset:0; z-index:60; background:rgba(5,7,11,.86); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:18px; }
-  .modal .box { width:100%; max-width:560px; background:var(--panel); border:1px solid #334155; border-radius:22px; overflow:hidden; animation:pop .25s cubic-bezier(.22,1,.36,1); }
-  @keyframes pop { from{opacity:0;transform:scale(.94) translateY(10px)} to{opacity:1;transform:none} }
-  .modal .head { padding:20px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, rgba(255,0,51,.12), transparent); }
-  .modal .head h3 { color:#fff; font-size:17px; }
-  .modal .body { padding:18px 22px; max-height:44vh; overflow-y:auto; font-size:12.5px; color:var(--muted); }
-  .modal .body h5 { color:#e2e8f0; margin:12px 0 4px; font-size:13px; }
-  .modal .foot { padding:16px 22px; border-top:1px solid var(--line); }
-  .check { display:flex; gap:10px; align-items:flex-start; font-size:12px; color:#cbd5e1; }
-  .check input { margin-top:2px; accent-color:var(--red); width:15px; height:15px; }
-  .hidden { display:none !important; }
-  footer { border-top:1px solid var(--line); margin-top:44px; padding:24px 0 40px; color:#64748b; font-size:11px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
-  @keyframes spin { to{transform:rotate(360deg)} }
-</style>
-</head>
-<body>
+- Ubuntu 24.04 또는 동급 Linux
+- 최소 2 vCPU / RAM 4 GB, 권장 4 vCPU / RAM 8 GB
+- 여유 디스크 30 GB 이상
+- Docker Engine + Docker Compose v2
+- VPS를 가리키는 DNS A/AAAA 레코드 2개(예: `n8n.example.com`, `studio.example.com`)
+- 방화벽 TCP 80/443 허용
 
-<header class="top">
-  <div class="wrap topbar">
-    <div class="brand"><span class="mark display">Y+</span><b class="display">YouTube Studio+</b></div>
-    <div class="chips">
-      <span class="chip" id="mode-chip"><span class="dot"></span>확인 중…</span>
-      <span class="chip">100% 브라우저 동작</span>
-      <span class="chip">by gubin0425</span>
-    </div>
-  </div>
-</header>
+```bash
+git clone https://github.com/gubin0425a-creator/YouTube-Studio.git
+cd YouTube-Studio
+./scripts/init-env.sh
+nano .env
+```
 
-<main class="wrap">
-  <div class="tabs">
-    <button class="tab active" data-pane="channel">채널 대시보드</button>
-    <button class="tab" data-pane="benchmark">쇼츠 벤치마크</button>
-    <button class="tab" data-pane="settings">API 키 · 설정</button>
-  </div>
+`.env`에서 반드시 설정할 값:
 
-  <!-- 채널 -->
-  <section class="pane active" id="pane-channel">
-    <div class="grid g-2">
-      <div class="card reveal">
-        <h3><span class="ic">▣</span> 채널 조회</h3>
-        <p style="font-size:11.5px;color:var(--muted)">주소창 URL·@핸들·채널 ID를 그대로 붙여넣으세요. 실제 구독자·총 조회수를 가져옵니다.</p>
-        <label class="f">채널 URL 또는 핸들</label>
-        <input class="txt" id="ch-input" placeholder="https://www.youtube.com/@MrBeast 또는 @MrBeast">
-        <div style="margin-top:12px"><button class="btn primary" id="ch-btn">실제 데이터 조회</button></div>
-        <div id="ch-msg"></div>
-      </div>
-      <div>
-        <div id="ch-empty" class="empty reveal"><b>아직 조회한 채널이 없습니다</b>API 키를 등록하면 공식 YouTube Data API v3로 실제 숫자를 가져옵니다.</div>
-        <div id="ch-result" class="card hidden"></div>
-      </div>
-    </div>
-  </section>
+```dotenv
+N8N_HOST=n8n.example.com
+STUDIO_HOST=studio.example.com
+GEMINI_API_KEY=AIza...실제_Gemini_API_키
+YOUTUBE_DATA_API_KEY=AIza...YouTube_Data_API_v3_조회키
+```
 
-  <!-- 벤치마크 -->
-  <section class="pane" id="pane-benchmark">
-    <div class="grid g-2">
-      <div class="card reveal">
-        <h3><span class="ic">＋</span> 쇼츠 발견 저장</h3>
-        <label class="f">쇼츠/영상 URL</label>
-        <input class="txt" id="bm-url" placeholder="https://youtube.com/shorts/...">
-        <label class="f">주제 태그</label>
-        <input class="txt" id="bm-topic" placeholder="예: AI 쇼츠">
-        <label class="f">저장할 워크스페이스</label>
-        <select class="txt" id="bm-ws"></select>
-        <div style="margin-top:12px"><button class="btn primary" id="bm-save">실제 데이터 가져와 저장</button></div>
-        <div id="bm-msg"></div>
-        <h3 style="margin-top:20px"><span class="ic">▤</span> 채널 워크스페이스</h3>
-        <div class="ws-chips" id="ws-chips"></div>
-        <div style="display:flex;gap:7px;margin-top:12px">
-          <input class="txt" id="ws-name" placeholder="새 채널 이름" style="flex:1">
-          <button class="btn ghost" id="ws-add">추가</button>
-        </div>
-      </div>
-      <div>
-        <div class="card reveal" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h3 style="margin:0"><span class="ic">◔</span> <span id="chart-title">성장 그래프 — 카드를 선택하세요</span></h3>
-          <div class="seg"><button id="seg-growth" class="active">성장</button><button id="seg-compare">비교</button></div>
-        </div>
-        <div class="card" style="margin-top:14px"><div class="chartbox"><canvas id="chart"></canvas></div>
-          <p style="font-size:10.5px;color:var(--muted);margin-top:8px">그래프는 수집 시점의 실제 값만 잇습니다. 추정·보간하지 않습니다.</p>
-        </div>
-        <div class="bm-list" id="bm-list" style="margin-top:14px"></div>
-        <div id="bm-empty" class="empty" style="margin-top:14px"><b>저장된 쇼츠가 없습니다</b>경쟁 쇼츠 URL을 붙여넣어 첫 관측 샘플을 기록하세요.</div>
-      </div>
-    </div>
-  </section>
+Gemini와 YouTube 조회 키는 API 제한을 서로 다르게 걸 수 있도록 별도 키를 권장합니다. `POSTGRES_PASSWORD`, `N8N_ENCRYPTION_KEY`, `VIDEO_WORKER_TOKEN`, `STUDIO_ACCESS_PASSWORD`, `STUDIO_SESSION_SECRET`은 스크립트가 무작위로 생성합니다. **운영을 시작한 뒤 `N8N_ENCRYPTION_KEY`를 바꾸면 저장된 n8n 자격 증명을 읽을 수 없으므로 변경하지 마세요.**
 
-  <!-- 설정 -->
-  <section class="pane" id="pane-settings">
-    <div class="grid g-2">
-      <div class="card reveal">
-        <h3><span class="ic">⚿</span> YouTube API 키 (선택)</h3>
-        <p style="font-size:11.5px;color:var(--muted)">키는 이 브라우저의 localStorage에만 저장됩니다. 키가 없어도 쇼츠 저장은 가능하지만 조회수 수집은 키가 필요합니다.</p>
-        <label class="f">API 키</label>
-        <input class="txt" id="key-input" type="password" placeholder="AIzaSy... (39자리)" autocomplete="off">
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn primary" id="key-save">검증 후 저장</button>
-          <button class="btn ghost hidden" id="key-del">삭제</button>
-        </div>
-        <div id="key-msg"></div>
-        <div class="principles">
-          <h4>데이터 원칙</h4>
-          <p>추정 조회수·가짜 프로필을 만들지 않습니다. 공식 API가 주지 않는 값은 비워두며, YouTube와 제휴하지 않고 다운로드·광고 차단·자동 조작 기능은 없습니다.</p>
-        </div>
-      </div>
-      <div class="card reveal">
-        <h3><span class="ic">⚑</span> 배포 안내</h3>
-        <p style="font-size:12px;color:var(--muted);line-height:1.7">
-          이 페이지는 서버 없이 동작하는 정적 웹앱입니다. GitHub Pages에 <code style="color:#93c5fd">index.html</code> 하나만 올려도 그대로 작동합니다.<br><br>
-          ① 리포지토리에 이 파일 업로드 → ② Settings → Pages → Source: <b style="color:#fff">Deploy from a branch (main, /root)</b> → ③ 완료.<br><br>
-          전체 서버 기능(PostgreSQL 저장·주기 자동 수집)이 필요하면 Next.js 풀스택 빌드를 Render·Railway·Vercel에서 운영하세요.
-        </p>
-      </div>
-    </div>
-  </section>
-</main>
+서버 시작:
 
-<footer class="wrap">
-  <span>© 2026 gubin0425 · YouTube Studio+</span>
-  <span>YouTube는 Google LLC의 상표입니다. 본 프로젝트는 Google과 제휴하지 않습니다.</span>
-</footer>
+```bash
+docker compose --profile production up -d --build
+docker compose ps
+docker compose logs -f n8n video-worker
+```
 
-<div class="modal hidden" id="consent">
-  <div class="box">
-    <div class="head"><h3 class="display">서비스 이용 약관 동의</h3><span class="chip warn">v1</span></div>
-    <div class="body">
-      <h5>1. 데이터 출처</h5>Google YouTube Data API v3 및 공식 oEmbed이 반환하는 공개 데이터만 사용합니다. 추정치는 만들지 않습니다.
-      <h5>2. 키 보관</h5>입력한 API 키는 이 브라우저의 localStorage에만 저장되며 외부 서버로 전송되지 않습니다.
-      <h5>3. 금지 행위</h5>영상 다운로드·광고 차단·자동 좋아요/구독/댓글·조회수 조작을 지원하지 않습니다.
-      <h5>4. 약관 갱신</h5>기능이 추가되면 약관 버전이 올라가고 다시 동의를 받습니다.
-      <h5>5. 면책</h5>YouTube·Google과 제휴하지 않으며, 이 약관은 법률 자문을 대체하지 않습니다.
-    </div>
-    <div class="foot">
-      <label class="check"><input type="checkbox" id="consent-check"><span>위 약관 v1에 동의하며, 갱신 시 다시 동의하겠습니다.</span></label>
-      <button class="btn primary" id="consent-agree" style="width:100%;justify-content:center;margin-top:12px" disabled>동의하고 시작</button>
-    </div>
-  </div>
-</div>
+Caddy가 인증서를 발급하면:
 
-<script>
-"use strict";
-var LS = { key:"ysp_key", consent:"ysp_consent_v", ws:"ysp_ws", bm:"ysp_bm", wsActive:"ysp_ws_active" };
-var TERMS_V = 1;
-var state = { key:"", workspaces:[], benchmarks:[], activeWs:null, selectedBm:null, chartMode:"growth" };
-var chart = null;
+- `https://N8N_HOST`: n8n 소유자 계정 생성·워크플로 관리
+- `https://STUDIO_HOST`: `.env`의 `STUDIO_ACCESS_PASSWORD`로 유투봇 로그인
 
-function load(k, fallback) { try { var v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } }
-function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-function fmt(n) { return (n === null || n === undefined) ? "—" : new Intl.NumberFormat("ko-KR").format(n); }
-function esc(s) { var d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML; }
-function setMsg(id, text, ok) { var el = document.getElementById(id); if (!text) { el.innerHTML = ""; return; } el.innerHTML = '<div class="msg ' + (ok ? "ok" : "err") + '">' + esc(text) + "</div>"; }
+n8n 소유자 생성이 끝나면 `n8n-import`가 이를 감지해 `YouTube Shorts - 24x7 Create and Scheduled Upload` 워크플로를 한 번만 자동 import합니다. 안전을 위해 처음에는 unpublished 상태입니다.
 
-/* ---------- youtube api (browser direct) ---------- */
-function parseChannelQuery(raw) {
-  var idm = raw.match(/(?:^|\/)(UC[a-zA-Z0-9_-]{22})(?:[/?#]|$)/);
-  if (idm) return { id:idm[1] };
-  try {
-    var u = new URL(/^https?:\/\//i.test(raw) ? raw : "https://" + raw);
-    if (u.hostname.indexOf("youtube.com") > -1) {
-      var p = u.pathname.split("/").filter(Boolean);
-      if (p[0] === "channel" && p[1]) return { id:p[1] };
-      if (p[0] && p[0].charAt(0) === "@") return { handle:p[0] };
-      if ((p[0] === "user" || p[0] === "c") && p[1]) return { handle:"@" + p[1] };
-    }
-  } catch (e) {}
-  if (raw.charAt(0) === "@") return { handle:raw };
-  return { text:raw };
-}
-function gapi(path, params) {
-  if (!state.key) return Promise.reject(new Error("API 키가 없습니다. 설정 탭에서 키를 등록하세요."));
-  var u = new URL("https://www.googleapis.com/youtube/v3/" + path);
-  u.searchParams.set("key", state.key);
-  Object.keys(params || {}).forEach(function (k) { if (params[k]) u.searchParams.set(k, params[k]); });
-  return fetch(u.toString()).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j.error && j.error.message) || ("API 오류 " + r.status)); return j; }); });
-}
-function oembed(videoId) {
-  var u = "https://www.youtube.com/oembed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + videoId) + "&format=json";
-  return fetch(u).then(function (r) { if (!r.ok) throw new Error("oEmbed 응답 없음"); return r.json(); });
-}
-function extractVideoId(raw) {
-  var t = raw.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(t)) return t;
-  var m = t.match(/shorts\/([a-zA-Z0-9_-]{11})/); if (m) return m[1];
-  try { var u = new URL(/^https?:\/\//i.test(t) ? t : "https://" + t);
-    if (u.hostname.indexOf("youtu.be") > -1) { var p = u.pathname.split("/")[1]; if (/^[a-zA-Z0-9_-]{11}$/.test(p)) return p; }
-    var v = u.searchParams.get("v"); if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
-  } catch (e) {}
-  return null;
-}
+```bash
+docker compose logs -f n8n-import
+```
 
-/* ---------- mode chip ---------- */
-function refreshMode() {
-  var chip = document.getElementById("mode-chip");
-  if (state.key) { chip.className = "chip ok"; chip.innerHTML = '<span class="dot"></span>API 키 모드 · 전체 통계'; }
-  else { chip.className = "chip warn"; chip.innerHTML = '<span class="dot"></span>비키 모드 · 저장 가능'; }
-  document.getElementById("key-del").classList.toggle("hidden", !state.key);
-}
+### 갤럭시 앱으로 설치
 
-/* ---------- channel ---------- */
-function channelLookup() {
-  var q = document.getElementById("ch-input").value.trim();
-  setMsg("ch-msg", "");
-  if (!q) { setMsg("ch-msg", "채널 URL이나 핸들을 입력하세요.", false); return; }
-  var btn = document.getElementById("ch-btn"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 조회 중';
-  var parsed = parseChannelQuery(q);
-  var chain = parsed.id ? Promise.resolve({ id:parsed.id })
-    : parsed.handle ? gapi("channels", { part:"id", forHandle:parsed.handle }).then(function (j) { if (!j.items || !j.items[0]) throw new Error("채널을 찾지 못했습니다."); return { id:j.items[0].id }; })
-    : gapi("search", { part:"snippet", q:parsed.text, type:"channel", maxResults:"1" }).then(function (j) { if (!j.items || !j.items[0]) throw new Error("채널을 찾지 못했습니다."); return { id:j.items[0].snippet.channelId }; });
-  chain.then(function (ref) { return gapi("channels", { part:"snippet,statistics,contentDetails", id:ref.id }); })
-    .then(function (j) {
-      var c = j.items && j.items[0]; if (!c) throw new Error("채널 데이터가 없습니다.");
-      var th = c.snippet.thumbnails || {};
-      var uploads = c.contentDetails && c.contentDetails.relatedPlaylists && c.contentDetails.relatedPlaylists.uploads;
-      renderChannel(c, th, uploads);
-    })
-    .catch(function (e) { setMsg("ch-msg", e.message, false); })
-    .then(function () { btn.disabled = false; btn.textContent = "실제 데이터 조회"; });
-}
-function renderChannel(c, th, uploads) {
-  document.getElementById("ch-empty").classList.add("hidden");
-  var box = document.getElementById("ch-result"); box.classList.remove("hidden");
-  var avatar = (th.high && th.high.url) || (th.medium && th.medium.url) || (th.default && th.default.url) || "";
-  var subs = c.statistics.hiddenSubscriberCount ? "비공개" : fmt(Number(c.statistics.subscriberCount));
-  box.innerHTML =
-    '<div class="ch-card"><img src="' + esc(avatar) + '" alt=""><div>' +
-    '<div style="font-size:18px;font-weight:900;color:#fff">' + esc(c.snippet.title) + "</div>" +
-    '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + esc(c.snippet.customUrl || "") + " · " + esc(c.id) + "</div>" +
-    '<a href="https://www.youtube.com/channel/' + esc(c.id) + '" target="_blank" rel="noreferrer" style="font-size:11px;font-weight:800;color:#fda4af">YouTube에서 열기 ↗</a></div></div>' +
-    '<div class="metrics">' +
-    '<div class="metric"><b>' + subs + "</b><span>구독자</span></div>" +
-    '<div class="metric"><b>' + fmt(Number(c.statistics.viewCount)) + "</b><span>총 조회수</span></div>" +
-    '<div class="metric"><b>' + fmt(Number(c.statistics.videoCount)) + "</b><span>영상 수</span></div>" +
-    "</div><div id='ch-videos'></div>";
-  if (uploads) {
-    gapi("playlistItems", { part:"snippet,contentDetails", playlistId:uploads, maxResults:"6" }).then(function (j) {
-      var ids = (j.items || []).map(function (i) { return i.contentDetails.videoId; }).join(",");
-      if (!ids) return;
-      return gapi("videos", { part:"snippet,statistics", id:ids }).then(function (vj) {
-        var html = '<h3 style="margin-top:18px"><span class="ic">▶</span> 최근 업로드</h3><div class="bm-list">';
-        (vj.items || []).forEach(function (v) {
-          var t = v.snippet.thumbnails || {};
-          html += '<a class="bm" style="text-decoration:none" href="https://www.youtube.com/watch?v=' + v.id + '" target="_blank" rel="noreferrer"><div class="thumb"><img src="' + esc((t.high && t.high.url) || (t.medium && t.medium.url) || "") + '"></div><div class="body"><div class="t">' + esc(v.snippet.title) + '</div><div class="stats"><span class="v">조회 ' + fmt(Number(v.statistics.viewCount)) + "</span><span class='l'>좋아요 " + fmt(v.statistics.likeCount === undefined ? null : Number(v.statistics.likeCount)) + "</span></div></div></a>";
-        });
-        html += "</div>";
-        document.getElementById("ch-videos").innerHTML = html;
-      });
-    }).catch(function () {});
-  }
-}
+1. 갤럭시의 Chrome 또는 Samsung Internet에서 `https://STUDIO_HOST`를 엽니다.
+2. 상단 **앱 설치**를 누릅니다.
+3. 설치 팝업이 없으면 브라우저 메뉴의 **앱 설치**를 선택합니다. 일반 `홈 화면에 바로가기`가 아니라 앱 설치 항목을 사용합니다.
+4. 설치 후 앱 서랍/홈 화면의 `유투봇` 아이콘으로 독립 실행합니다.
 
-/* ---------- workspaces ---------- */
-function ensureWorkspaces() {
-  if (!state.workspaces.length) {
-    state.workspaces = [{ id:"ws-main", name:"메인 채널", isDefault:true }];
-    save(LS.ws, state.workspaces);
-  }
-  if (!state.activeWs || !state.workspaces.some(function (w) { return w.id === state.activeWs; })) state.activeWs = state.workspaces[0].id;
-}
-function renderWs() {
-  var sel = document.getElementById("bm-ws");
-  sel.innerHTML = state.workspaces.map(function (w) { return '<option value="' + w.id + '">' + esc(w.name) + (w.isDefault ? " (기본)" : "") + "</option>"; }).join("");
-  sel.value = state.activeWs;
-  var chips = document.getElementById("ws-chips");
-  chips.innerHTML = '<button class="ws' + (state.activeWs === "all" ? " active" : "") + '" data-id="all">전체</button>' +
-    state.workspaces.map(function (w) {
-      return '<button class="ws' + (state.activeWs === w.id ? " active" : "") + '" data-id="' + w.id + '">' + esc(w.name) + (w.isDefault ? "" : ' <span class="x" data-del="' + w.id + '">✕</span>') + "</button>";
-    }).join("");
-}
-function wsClick(e) {
-  var del = e.target.getAttribute && e.target.getAttribute("data-del");
-  if (del) {
-    var target = state.workspaces.find(function (w) { return w.id === del; });
-    if (target && target.isDefault) { setMsg("bm-msg", "기본 채널은 삭제할 수 없습니다.", false); return; }
-    state.benchmarks.forEach(function (b) { if (b.workspaceId === del) b.workspaceId = state.workspaces[0].id; });
-    state.workspaces = state.workspaces.filter(function (w) { return w.id !== del; });
-    if (state.activeWs === del) state.activeWs = state.workspaces[0].id;
-    save(LS.ws, state.workspaces); save(LS.bm, state.benchmarks);
-    renderWs(); renderBenchmarks(); return;
-  }
-  var id = e.currentTarget.getAttribute("data-id");
-  state.activeWs = id; save(LS.wsActive, id); renderWs(); renderBenchmarks();
-}
+이 PWA는 채팅·사진·설정·실행 상태를 관리하는 리모컨입니다. Android 절전 정책과 전원 종료 때문에 휴대폰 자체에서 24시간 렌더를 돌리지는 않습니다. **실제 자동화는 VPS에서 실행되므로 앱을 닫거나 갤럭시 전원을 꺼도 n8n workflow가 Published 상태인 한 계속됩니다.** PWA service worker는 화면 셸만 캐시하며 로그인·대화·사진·설정 API 응답은 캐시하지 않습니다.
 
-/* ---------- benchmarks ---------- */
-function visibleBenchmarks() { return state.activeWs === "all" ? state.benchmarks : state.benchmarks.filter(function (b) { return b.workspaceId === state.activeWs; }); }
-function renderBenchmarks() {
-  var list = visibleBenchmarks();
-  document.getElementById("bm-empty").style.display = list.length ? "none" : "block";
-  document.getElementById("bm-list").innerHTML = list.map(function (b) {
-    var last = b.samples.length ? b.samples[b.samples.length - 1] : null;
-    return '<div class="bm' + (state.selectedBm === b.id ? " sel" : "") + '" data-id="' + b.id + '">' +
-      '<div class="thumb">' + (b.thumbnailUrl ? '<img src="' + esc(b.thumbnailUrl) + '">' : "") + '<span class="tag">#' + esc(b.topic) + "</span></div>" +
-      '<div class="body"><div class="t">' + esc(b.title) + '</div><div class="m">' + esc(b.channelTitle || "채널 정보 대기") + " · 샘플 " + b.samples.length + "회</div>" +
-      '<div class="stats"><span class="v">조회 ' + fmt(last ? last.views : null) + '</span><span class="l">♥ ' + fmt(last ? last.likes : null) + "</span>" +
-      '<span class="acts"><button class="iconbtn" data-refresh="' + b.id + '" title="지금 수집">↻</button><button class="iconbtn" data-del="' + b.id + '" title="삭제">✕</button></span></div></div></div>';
-  }).join("");
-  renderChart();
-}
-function saveBenchmark() {
-  var url = document.getElementById("bm-url").value;
-  var id = extractVideoId(url);
-  setMsg("bm-msg", "");
-  if (!id) { setMsg("bm-msg", "올바른 쇼츠/영상 URL을 입력하세요.", false); return; }
-  if (state.benchmarks.some(function (b) { return b.videoId === id; })) { setMsg("bm-msg", "이미 저장된 쇼츠입니다.", false); return; }
-  var btn = document.getElementById("bm-save"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 가져오는 중';
-  var rec = { id:"bm" + Date.now(), videoId:id, workspaceId:document.getElementById("bm-ws").value, topic:document.getElementById("bm-topic").value.trim() || "미분류", title:"Shorts " + id, channelTitle:"", thumbnailUrl:null, publishedAt:null, url:"https://www.youtube.com/watch?v=" + id, savedAt:Date.now(), samples:[] };
-  var done = function (meta) {
-    if (meta) { rec.title = meta.title || rec.title; rec.channelTitle = meta.channelTitle || rec.channelTitle; rec.thumbnailUrl = meta.thumbnailUrl || rec.thumbnailUrl; rec.publishedAt = meta.publishedAt || rec.publishedAt;
-      if (meta.views !== undefined && meta.views !== null) rec.samples.push({ t:Date.now(), views:meta.views, likes:meta.likes === undefined ? null : meta.likes }); }
-    state.benchmarks.unshift(rec); save(LS.bm, state.benchmarks);
-    state.selectedBm = rec.id;
-    document.getElementById("bm-url").value = ""; document.getElementById("bm-topic").value = "";
-    renderBenchmarks();
-    var card = document.querySelector('.bm[data-id="' + rec.id + '"]'); if (card) card.classList.add("flash");
-    setMsg("bm-msg", "저장 완료 — “" + rec.title + "”", true);
-    btn.disabled = false; btn.textContent = "실제 데이터 가져와 저장";
-  };
-  if (state.key) {
-    gapi("videos", { part:"snippet,statistics", id:id }).then(function (j) {
-      var v = j.items && j.items[0]; if (!v) throw new Error("영상을 찾지 못했습니다.");
-      var t = v.snippet.thumbnails || {};
-      done({ title:v.snippet.title, channelTitle:v.snippet.channelTitle, thumbnailUrl:(t.high && t.high.url) || (t.medium && t.medium.url), publishedAt:v.snippet.publishedAt, views:Number(v.statistics.viewCount), likes:v.statistics.likeCount === undefined ? null : Number(v.statistics.likeCount) });
-    }).catch(function (e) { setMsg("bm-msg", e.message, false); btn.disabled = false; btn.textContent = "실제 데이터 가져와 저장"; });
-  } else {
-    oembed(id).then(function (j) { done({ title:j.title, channelTitle:j.author_name, thumbnailUrl:j.thumbnail_url }); })
-      .catch(function () { done(null); });
-  }
-}
-function refreshBenchmark(id) {
-  var b = state.benchmarks.find(function (x) { return x.id === id; }); if (!b) return;
-  if (!state.key) { setMsg("bm-msg", "조회수 재수집은 API 키가 필요합니다.", false); return; }
-  gapi("videos", { part:"statistics", id:b.videoId }).then(function (j) {
-    var v = j.items && j.items[0]; if (!v) return;
-    b.samples.push({ t:Date.now(), views:Number(v.statistics.viewCount), likes:v.statistics.likeCount === undefined ? null : Number(v.statistics.likeCount) });
-    if (b.samples.length > 240) b.samples = b.samples.slice(-240);
-    save(LS.bm, state.benchmarks); renderBenchmarks();
-  }).catch(function (e) { setMsg("bm-msg", e.message, false); });
-}
+## 2. Google 값의 정확한 구분
 
-/* ---------- charts ---------- */
-function renderChart() {
-  var canvas = document.getElementById("chart");
-  if (chart) { chart.destroy(); chart = null; }
-  var ctx = canvas.getContext("2d");
-  if (state.chartMode === "growth") {
-    var b = state.benchmarks.find(function (x) { return x.id === state.selectedBm; });
-    var s = b ? b.samples : [];
-    document.getElementById("chart-title").textContent = b ? "“" + b.title.slice(0, 26) + "” 성장 곡선" : "성장 그래프 — 카드를 선택하세요";
-    if (!s.length) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
-    var hasViews = s.some(function (x) { return x.views !== null && x.views !== undefined; });
-    var ds = [];
-    if (hasViews) ds.push({ label:"조회수", data:s.map(function (x) { return x.views || 0; }), borderColor:"#ff0033", backgroundColor:"rgba(255,0,51,.14)", fill:true, tension:.32, pointRadius:3 });
-    ds.push({ label:"좋아요", data:s.map(function (x) { return x.likes || 0; }), borderColor:"#34d399", backgroundColor:"rgba(52,211,153,.1)", fill:!hasViews, tension:.32, pointRadius:3 });
-    chart = new Chart(ctx, { type:"line", data:{ labels:s.map(function (x) { return new Date(x.t).toLocaleString("ko-KR", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" }); }), datasets:ds },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:"#94a3b8", font:{ size:11, weight:700 } } } },
-        scales:{ x:{ ticks:{ color:"#64748b", font:{ size:9 }, maxTicksLimit:6 }, grid:{ color:"rgba(148,163,184,.08)" } }, y:{ ticks:{ color:"#64748b", font:{ size:10 } }, grid:{ color:"rgba(148,163,184,.08)" } } } } });
-  } else {
-    document.getElementById("chart-title").textContent = "워크스페이스 최신 조회수 비교";
-    var items = visibleBenchmarks().filter(function (x) { return x.samples.length; });
-    chart = new Chart(ctx, { type:"bar", data:{ labels:items.map(function (x) { return x.title.slice(0, 14); }), datasets:[{ label:"최신 조회수", data:items.map(function (x) { return x.samples[x.samples.length - 1].views || 0; }), backgroundColor:"rgba(255,0,51,.7)", borderRadius:8 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ color:"#94a3b8", font:{ size:9 } }, grid:{ display:false } }, y:{ ticks:{ color:"#64748b", font:{ size:10 } }, grid:{ color:"rgba(148,163,184,.08)" } } } } });
-  }
-}
+| 형태 | 정체 | 이 프로젝트에서 쓰는 곳 |
+|---|---|---|
+| `GOCSPX-...` | OAuth **Client Secret** | n8n YouTube OAuth 자격 증명에만 입력. Git/.env 금지 |
+| `숫자-문자.apps.googleusercontent.com` | OAuth **Client ID** | n8n YouTube OAuth 자격 증명에 입력 |
+| `AIza...` (보통 39자) | Google **API Key** | `.env`의 `GEMINI_API_KEY` / `YOUTUBE_DATA_API_KEY`; OAuth 업로드를 대신할 수 없음 |
+| OAuth Refresh Token | 채널 장기 접근 토큰 | n8n이 암호화 저장. 직접 복사하거나 Git에 저장하지 않음 |
 
-/* ---------- key ---------- */
-function saveKey() {
-  var k = document.getElementById("key-input").value.trim();
-  setMsg("key-msg", "");
-  if (!/^AIza[0-9A-Za-z_-]{35}$/.test(k)) { setMsg("key-msg", "AIza로 시작하는 39자리 키를 붙여넣으세요.", false); return; }
-  var btn = document.getElementById("key-save"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 검증 중';
-  state.key = k;
-  gapi("videos", { part:"id", id:"dQw4w9WgXcQ" }).then(function () {
-    save(LS.key, k); refreshMode(); setMsg("key-msg", "검증 완료 — 키를 이 브라우저에 저장했습니다.", true);
-    document.getElementById("key-input").value = "";
-  }).catch(function (e) { state.key = load(LS.key, ""); setMsg("key-msg", "검증 실패: " + e.message, false); })
-    .then(function () { btn.disabled = false; btn.textContent = "검증 후 저장"; });
-}
+**YouTube 업로드는 API 키로 할 수 없고 OAuth 2.0이 필수**입니다. 반대로 Gemini 대본 생성에는 OAuth Client ID/Secret이 아니라 `AIza...` API 키가 필요합니다.
 
-/* ---------- boot ---------- */
-document.querySelectorAll(".tab").forEach(function (t) {
-  t.addEventListener("click", function () {
-    document.querySelectorAll(".tab").forEach(function (x) { x.classList.toggle("active", x === t); });
-    document.querySelectorAll(".pane").forEach(function (p) { p.classList.toggle("active", p.id === "pane-" + t.getAttribute("data-pane")); });
-    if (t.getAttribute("data-pane") === "benchmark") renderChart();
-  });
-});
-document.getElementById("ch-btn").addEventListener("click", channelLookup);
-document.getElementById("ch-input").addEventListener("keydown", function (e) { if (e.key === "Enter") channelLookup(); });
-document.getElementById("bm-save").addEventListener("click", saveBenchmark);
-document.getElementById("ws-add").addEventListener("click", function () {
-  var name = document.getElementById("ws-name").value.trim(); if (!name) return;
-  state.workspaces.push({ id:"ws" + Date.now(), name:name, isDefault:false });
-  save(LS.ws, state.workspaces); document.getElementById("ws-name").value = ""; renderWs();
-});
-document.getElementById("ws-chips").addEventListener("click", wsClick);
-document.getElementById("bm-list").addEventListener("click", function (e) {
-  var r = e.target.getAttribute && e.target.getAttribute("data-refresh");
-  var d = e.target.getAttribute && e.target.getAttribute("data-del");
-  if (r) { refreshBenchmark(r); return; }
-  if (d) { state.benchmarks = state.benchmarks.filter(function (b) { return b.id !== d; }); if (state.selectedBm === d) state.selectedBm = null; save(LS.bm, state.benchmarks); renderBenchmarks(); return; }
-  var card = e.target.closest(".bm"); if (card) { state.selectedBm = card.getAttribute("data-id"); state.chartMode = "growth"; document.getElementById("seg-growth").classList.add("active"); document.getElementById("seg-compare").classList.remove("active"); renderBenchmarks(); }
-});
-document.getElementById("bm-ws").addEventListener("change", function (e) { state.activeWs = e.target.value; save(LS.wsActive, state.activeWs); renderWs(); renderBenchmarks(); });
-document.getElementById("seg-growth").addEventListener("click", function () { state.chartMode = "growth"; this.classList.add("active"); document.getElementById("seg-compare").classList.remove("active"); renderChart(); });
-document.getElementById("seg-compare").addEventListener("click", function () { state.chartMode = "compare"; this.classList.add("active"); document.getElementById("seg-growth").classList.remove("active"); renderChart(); });
-document.getElementById("key-save").addEventListener("click", saveKey);
-document.getElementById("key-del").addEventListener("click", function () { state.key = ""; localStorage.removeItem(LS.key); refreshMode(); setMsg("key-msg", "키를 삭제했습니다.", true); });
+### 발급 직전 공식 페이지 3종
 
-var consentBox = document.getElementById("consent");
-var consentCheck = document.getElementById("consent-check");
-consentCheck.addEventListener("change", function () { document.getElementById("consent-agree").disabled = !consentCheck.checked; });
-document.getElementById("consent-agree").addEventListener("click", function () { save(LS.consent, TERMS_V); consentBox.classList.add("hidden"); });
-if (load(LS.consent, 0) < TERMS_V) consentBox.classList.remove("hidden");
+| 순서 | 용도 | 바로가기 | 저장 위치 |
+|---|---|---|---|
+| ① | Gemini 대본·사진·유투봇 | [Google AI Studio API Keys](https://aistudio.google.com/app/apikey) | VPS `.env`의 `GEMINI_API_KEY` |
+| ② | YouTube 채널·영상 통계 | [YouTube Data API v3 활성화](https://console.cloud.google.com/apis/library/youtube.googleapis.com) → [API 키 생성](https://console.cloud.google.com/apis/credentials) | VPS `.env`의 `YOUTUBE_DATA_API_KEY` |
+| ③ | 실제 채널 업로드·예약 공개 | [OAuth 동의 화면](https://console.cloud.google.com/auth/overview) → [OAuth Client 생성](https://console.cloud.google.com/auth/clients/create) | n8n `YouTube OAuth2 API` credential |
 
-state.key = load(LS.key, "");
-state.workspaces = load(LS.ws, []);
-state.benchmarks = load(LS.bm, []);
-state.activeWs = load(LS.wsActive, null);
-ensureWorkspaces();
-refreshMode(); renderWs(); renderBenchmarks();
+③은 한 종류의 업로드 자격 증명이지만 실제로는 `Client ID`와 `Client Secret` 두 값이 발급됩니다. OAuth Application type은 **Web application**을 고르고, Redirect URI는 n8n credential 화면에 표시된 값을 그대로 넣습니다. Google Cloud 링크는 먼저 올바른 프로젝트를 선택해야 합니다.
 
-var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold:.1 });
-document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
-</script>
-</body>
-</html>
+자세한 재발급 및 연결 절차: [`docs/GOOGLE_OAUTH_KO.md`](./docs/GOOGLE_OAUTH_KO.md)
+
+## 3. n8n에서 최초 1회 연결
+
+### 3-1. 내부 video worker 인증
+
+1. VPS에서 `.env`의 `VIDEO_WORKER_TOKEN` 값을 확인합니다. 화면 공유·채팅·Git에는 복사하지 마세요.
+2. n8n **Credentials → Add credential → Header Auth**를 엽니다.
+3. Header Name은 정확히 `X-Worker-Token`, Value는 위 token 값으로 저장합니다.
+4. 워크플로의 `Load Automation Config`, `Render Video`, `Download MP4`, `Mark Uploaded (Idempotency)` 네 노드에 같은 Header Auth credential을 선택합니다.
+
+n8n에는 worker token을 환경 변수로 노출하지 않고 encrypted credential로만 저장하며, workflow의 임의 환경 변수 접근도 차단했습니다.
+
+### 3-2. YouTube OAuth
+
+1. Google Cloud에서 기존에 노출된 OAuth 클라이언트를 폐기하고 새 **Web application** OAuth 클라이언트를 만듭니다.
+2. YouTube Data API v3를 활성화합니다.
+3. 승인된 리디렉션 URI에 n8n이 보여 주는 주소를 그대로 추가합니다. 일반적으로:
+   `https://n8n.example.com/rest/oauth2-credential/callback`
+4. n8n 워크플로에서 `Upload + Schedule on YouTube` 노드를 엽니다.
+5. 새 `YouTube OAuth2 API` credential을 만들고 **새 Client ID / 새 Client Secret**을 입력합니다.
+6. `Sign in with Google`로 실제 업로드할 YouTube 채널을 승인합니다.
+7. 노드에 그 credential을 선택하고 저장합니다.
+
+## 4. 유투봇 사용
+
+`https://STUDIO_HOST`의 **유투봇 AI** 탭에서 다음을 사용할 수 있습니다.
+
+- 대화방을 계속 만들고 서버에 영구 저장, JSON 내보내기 또는 완전 삭제
+- JPEG/PNG/WEBP 사진 최대 5장씩 업로드·분석(서버에서 EXIF 제거 후 JPEG로 정규화)
+- 내 채널 주소와 벤치마킹 채널 주소 입력
+- 양쪽 영상 주소를 각각 **0~15개 선택 입력**; 비우면 각 채널의 최신 15개 자동 수집
+- 실제 구독자/조회수/좋아요/댓글/게시일/영상 길이를 근거로 비교
+- 제목·설명·대본·콘텐츠 전략·n8n 설정 수정안 요청
+- 봇이 제안한 자동화 설정은 사용자가 **검토 후 적용**을 눌러야 저장
+
+대화 전체는 삭제 전까지 저장되지만 Gemini에 매번 전송하는 문맥은 비용·성능을 위해 최근 `CHAT_HISTORY_MESSAGES`개(기본 40개)입니다. 업로드 사진도 대화 삭제 시 같이 삭제됩니다.
+
+## 5. 주제와 지정 시간 변경
+
+유투봇 탭의 **n8n 자동화 설정**에서 바꿉니다. n8n은 매 실행마다 worker에서 최신 설정을 읽습니다.
+
+| 필드 | 기본값 | 의미 |
+|---|---:|---|
+| `topicPool` | AI/스마트폰/유튜브 등 | 쉼표로 나눈 주제를 날짜별 순환 |
+| `timezone` | `Asia/Seoul` | 게시 시간대 |
+| `publishHour` | `18` | 공개 시각(0~23시) |
+| `publishMinute` | `0` | 공개 분 |
+| `minimumLeadMinutes` | `120` | 업로드·처리용 최소 여유 시간 |
+| `durationSeconds` | `45` | 목표 영상 길이, 최대값은 `.env`에서 제한 |
+| `channelKey` | `main` | 중복 방지용 채널 구분값 |
+
+제작 시작 시각만 n8n의 `Daily 03:00 KST` Schedule Trigger에서 바꿉니다. **제작 시작은 게시 시각보다 최소 2시간 빠르게** 두는 것이 안전합니다.
+
+## 6. 활성화 전 검증
+
+1. 워크플로에서 `Manual Test`로 한 번 실행합니다.
+2. 실행 결과가 모든 노드에서 성공인지 확인합니다.
+3. YouTube Studio에서 영상이 **비공개·예약 상태**이고 제목/음성/자막/게시 시각이 맞는지 확인합니다.
+4. 아동용 여부, 합성 콘텐츠 공개, 저작권·Pexels 라이선스, 채널 정책을 직접 확인합니다.
+5. 문제가 없을 때만 n8n 우측 상단에서 **Publish/Active**로 전환합니다.
+6. 폰과 PC를 끈 뒤 다음 실행 기록이 서버에서 생성되는지 확인합니다.
+
+## 운영 명령
+
+```bash
+# 상태
+docker compose ps
+
+# 최근 로그
+docker compose logs --tail=200 n8n video-worker postgres caddy
+
+# 재시작
+docker compose restart n8n video-worker
+
+# 안전한 업데이트 전 백업
+docker compose exec -T postgres pg_dump -U n8n n8n | gzip > n8n-$(date +%F).sql.gz
+
+# 종료(데이터 볼륨은 유지)
+docker compose --profile production down
+```
+
+운영·복구 상세: [`docs/OPERATIONS_KO.md`](./docs/OPERATIONS_KO.md)
+
+## 중요한 제한
+
+- “무제한·평생”은 서비스 약속으로 보장할 수 없습니다. 앱에는 메시지 횟수/자동 만료 제한을 두지 않았지만 VPS 디스크, 백업, 도메인, Gemini 비용·rate limit, YouTube quota는 계속 필요합니다.
+- 채팅 데이터와 사진은 `video_data` Docker volume에 있으므로 그 볼륨을 백업하지 않으면 서버 장애 때 잃을 수 있습니다.
+- 기본 YouTube Data API 할당량에서는 조회와 업로드 수가 제한됩니다. 대량 업로드용 구성이 아닙니다.
+- 신규/미감사 API 프로젝트의 API 업로드는 YouTube 정책에 따라 **비공개로 잠길 수 있습니다**. 공개 예약 운영 전 YouTube API Services 감사를 확인하세요.
+- Google OAuth 동의 화면을 `Testing`으로 두면 외부 앱의 refresh token이 짧게 만료될 수 있습니다. 장기 무인 운영 전에 앱 게시 상태와 검증 요건을 확인하세요.
+- AI가 만든 대본도 사실 오류, 반복 콘텐츠, 스팸 또는 저작권 문제가 생길 수 있습니다. 완전 자동 게시를 활성화하는 책임은 채널 소유자에게 있습니다.
+- Edge TTS는 간편 기본값입니다. 상업 서비스 수준의 SLA가 필요하면 `.env`에서 `TTS_PROVIDER=google`과 Google Cloud TTS 키를 설정하세요.
+- 서버가 완전히 중단되면 n8n Schedule Trigger도 실행되지 않습니다. VPS 모니터링과 백업이 필요합니다.
+
+## 개발 검증
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r worker/requirements-dev.txt
+PYTHONPATH=worker pytest -q worker/tests
+ruff check worker/app worker/tests
+
+docker compose config
+```
+
+보안상 실제 `.env`, OAuth secret, refresh token, 렌더된 MP4는 모두 Git에서 제외됩니다.
