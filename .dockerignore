@@ -1,0 +1,13 @@
+.git
+.env
+.venv
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+worker/tests
+docs
+n8n
+scripts
+*.md
+!index.html
